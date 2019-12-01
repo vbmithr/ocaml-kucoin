@@ -25,6 +25,7 @@ module Pair : sig
   } [@@deriving sexp]
 
   val create : base:string -> quote:string -> t
+  val equal : t -> t -> bool
 
   val pp : t Fmt.t
   val pp_list : t list Fmt.t
@@ -46,3 +47,5 @@ val time_ns : Ptime.t encoding
 
 val time_ms : Ptime.t encoding
 (** time encoded as a float: number of ms *)
+
+val orderID_of_hex : Hex.t -> Uuidm.t

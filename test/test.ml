@@ -65,9 +65,12 @@ let test_later = ref []
  *   Deferred.Or_error.return accts *)
 
 let rest = [
+  wrap_request "symbols" (symbols ()) ;
   wrap_request "book_sandbox"
     (book20 ~sandbox:true (Pair.create ~base:"BTC" ~quote:"USDT")) ;
   wrap_request "book"
+    (book20 ~sandbox:false (Pair.create ~base:"BTC" ~quote:"USDT")) ;
+  wrap_request "bookL3"
     (book20 ~sandbox:false (Pair.create ~base:"BTC" ~quote:"USDT")) ;
   (* wrap_request_light "accounts" accounts_full ; *)
 ]

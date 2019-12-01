@@ -43,6 +43,7 @@ module Pair = struct
   } [@@deriving sexp]
 
   let create ~base ~quote = { base; quote }
+  let equal = Stdlib.(=)
 
   let pp ppf { base; quote } = Format.fprintf ppf "%s-%s" base quote
   let pp_list = Format.pp_print_list ~pp_sep:(fun ppf () -> Format.pp_print_char ppf ',') pp
@@ -68,3 +69,9 @@ let time_ms = conv
     (fun s -> Option.get (Ptime.of_float_s (s /. 1e3)))
     float
 
+let orderID_of_hex hex =
+  let bytes = Hex.to_bytes hex in
+  let buf = Bytes.make 16 '\x00' in
+  Bytes.blit bytes 0 buf 4 12 ;
+  let buf = Bytes.unsafe_to_string buf in
+  Option.get (Uuidm.of_bytes buf)

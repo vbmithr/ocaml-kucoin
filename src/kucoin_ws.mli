@@ -31,6 +31,7 @@ type sub = {
 
 val l3 : Pair.t list -> sub
 val l2 : Pair.t list -> sub
+val mtch : Pair.t list -> sub
 
 type err = {
   id: string ;

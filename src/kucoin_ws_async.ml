@@ -72,7 +72,7 @@ let connect ?(sandbox=false) () =
 module Persistent = struct
   include Persistent_connection_kernel.Make(T)
 
-  let create' ~server_name ?on_event ?retry_delay () =
+  let create' ~server_name ?on_event ?retry_delay =
     create ~server_name ?on_event ?retry_delay ~connect:(fun sandbox -> connect ~sandbox ())
 end
 

@@ -94,6 +94,10 @@ let l2 pairs =
   let id = Uuidm.(create `V4 |> to_string) in
   { id; topic = L2; pairs; priv = false; response = false }
 
+let mtch pairs =
+  let id = Uuidm.(create `V4 |> to_string) in
+  { id; topic = Match; pairs; priv = false; response = false }
+
 let sub_encoding =
   conv
     (fun { id; topic; pairs; priv; response } ->
@@ -255,13 +259,6 @@ let ordStatus =
     "filled", Fixtypes.OrdStatus.Filled ;
     "canceled", Fixtypes.OrdStatus.Canceled ;
   ]
-
-let orderID_of_hex hex =
-  let bytes = Hex.to_bytes hex in
-  let buf = Bytes.make 16 '\x00' in
-  Bytes.blit bytes 0 buf 4 12 ;
-  let buf = Bytes.unsafe_to_string buf in
-  Option.get (Uuidm.of_bytes buf)
 
 let received =
   conv
