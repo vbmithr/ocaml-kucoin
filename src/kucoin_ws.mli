@@ -1,3 +1,4 @@
+open Kucoin
 open Json_encoding
 
 type bullet = {
@@ -14,18 +15,10 @@ and server = {
 
 val bullet : bullet encoding
 
-module Pair : sig
-  type t = {
-    base: string;
-    quote: string;
-  } [@@deriving sexp]
-
-  val to_string : t -> string
-  val of_string : string -> t
-end
-
 type topic =
   | Ticker
+  | Match
+  | L2
   | L3
 
 type sub = {
@@ -37,6 +30,7 @@ type sub = {
 }
 
 val l3 : Pair.t list -> sub
+val l2 : Pair.t list -> sub
 
 type err = {
   id: string ;
@@ -56,10 +50,10 @@ type received = {
   symbol: Pair.t ;
   side: Fixtypes.Side.t ;
   ordType: Fixtypes.OrdType.t ;
-  price: float ;
+  price: float option ;
   ts: Ptime.t ;
   orderID: Uuidm.t ;
-  clOrdID: string;
+  clOrdID: string option ;
 } [@@deriving sexp]
 
 type done_ = {
@@ -68,9 +62,56 @@ type done_ = {
   side: Fixtypes.Side.t ;
   reason: Fixtypes.OrdStatus.t ;
   orderID: Uuidm.t ;
+  price: float option ;
+  size: float option ;
+  ts: Ptime.t ;
+} [@@deriving sexp]
+
+type open_ = {
+  sequence: int64 ;
+  symbol: Pair.t ;
+  side: Fixtypes.Side.t ;
+  orderID: Uuidm.t ;
+  price: float;
+  size: float;
+  ts: Ptime.t ;
+} [@@deriving sexp]
+
+type match_ = {
+  sequence: int64 ;
+  symbol: Pair.t ;
+  side: Fixtypes.Side.t ;
   price: float ;
   size: float ;
+  takerOrdID: Uuidm.t ;
+  makerOrdID: Uuidm.t ;
+  tradeID: Uuidm.t ;
   ts: Ptime.t ;
+} [@@deriving sexp]
+
+type change = {
+  sequence: int64 ;
+  symbol: Pair.t ;
+  side: Fixtypes.Side.t ;
+  orderID: Uuidm.t ;
+  price: float ;
+  oldSize: float ;
+  newSize: float ;
+  ts: Ptime.t ;
+} [@@deriving sexp]
+
+type level = {
+  price: float ;
+  size: float ;
+  seq: int64 ;
+} [@@deriving sexp]
+
+type l2update = {
+  symbol: Pair.t ;
+  seqStart: int64 ;
+  seqEnd: int64 ;
+  bids: level list ;
+  asks: level list ;
 } [@@deriving sexp]
 
 type t =
@@ -82,6 +123,10 @@ type t =
   | Unsubscribe of sub
   | Received of received message
   | Done of done_ message
+  | Open of open_ message
+  | Match of match_ message
+  | Change of change message
+  | L2 of l2update message
   | Error of err
 [@@deriving sexp]
 

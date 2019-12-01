@@ -17,3 +17,32 @@ module Uuidm : sig
 
   include Sexplib0.Sexpable.S with type t = Uuidm.t
 end
+
+module Pair : sig
+  type t = {
+    base: string;
+    quote: string;
+  } [@@deriving sexp]
+
+  val create : base:string -> quote:string -> t
+
+  val pp : t Fmt.t
+  val pp_list : t list Fmt.t
+
+  val to_string : t -> string
+  val of_string : string -> t
+
+  val encoding : t Json_encoding.encoding
+end
+
+open Json_encoding
+
+val uri : Uri.t encoding
+val strint : int64 encoding
+val strfl : float encoding
+
+val time_ns : Ptime.t encoding
+(** time encoded as a string: number of ns *)
+
+val time_ms : Ptime.t encoding
+(** time encoded as a float: number of ms *)

@@ -42,12 +42,14 @@ let srv sandbox =
 let get_url sandbox =
   Fastrest.request (srv sandbox) >>|? fun { code = _ ; servers; token } ->
   let server = List.hd_exn servers in
+  let _, ps = Ptime.Span.to_d_ps server.pingIval in
+  (Lazy.force Time_stamp_counter.calibrator, Int63.of_int64_exn (Int64.(ps / 1000L))),
   Uri.with_query server.endpoint
     ["token", [token]; "acceptUserMessage", ["true"]]
 
 let connect ?(sandbox=false) () =
-  get_url sandbox >>=? fun url ->
-  Deferred.Or_error.map (Fastws_async.EZ.connect url)
+  get_url sandbox >>=? fun (hb_ns, url) ->
+  Deferred.Or_error.map (Fastws_async.EZ.connect ~hb_ns url)
     ~f:begin fun { r; w; cleaned_up } ->
       let client_read = Pipe.map r ~f:begin fun msg ->
           Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
@@ -80,8 +82,8 @@ let connect_exn ?sandbox url =
   | Ok a -> return a
 
 let with_connection ?(sandbox=false) f =
-  get_url sandbox >>=? fun url ->
-  Fastws_async.EZ.with_connection url ~f:begin fun r w ->
+  get_url sandbox >>=? fun (hb_ns, url) ->
+  Fastws_async.EZ.with_connection ~hb_ns url ~f:begin fun r w ->
     let client_read = Pipe.map r ~f:begin fun msg ->
         Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
       end in

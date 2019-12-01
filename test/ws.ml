@@ -1,7 +1,7 @@
 open Core
 open Async
 
-(* open Kucoin *)
+open Kucoin
 open Kucoin_ws
 
 let src = Logs.Src.create "kucoin.ws-test"
@@ -12,6 +12,9 @@ let process_user_cmd ~sandbox:_ w =
     match String.split s ~on:' ' with
     | "l3" :: pairs ->
       let sub = l3 (List.map pairs ~f:Pair.of_string) in
+      Pipe.write w (Subscribe sub)
+    | "l2" :: pairs ->
+      let sub = l2 (List.map pairs ~f:Pair.of_string) in
       Pipe.write w (Subscribe sub)
     | "ping" :: v :: _ ->
       Pipe.write w (Ping v)
