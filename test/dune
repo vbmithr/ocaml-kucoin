@@ -1,0 +1,22 @@
+(executable
+ (name ws)
+ (modules ws)
+ (public_name kucoin-ws-cli)
+ (package kucoin-ws-async)
+ (preprocess (pps ppx_jane ppx_sexp_conv))
+ (libraries
+  bs-devkit
+  logs-async-reporter
+  kucoin-rest
+  kucoin-ws
+  kucoin-ws-async))
+
+(test
+ (name       test)
+ (modules    test)
+ (preprocess (pps ppx_jane ppx_sexp_conv))
+ (libraries
+  bs-devkit
+  kucoin-rest
+  alcotest-async
+  logs-async-reporter))
