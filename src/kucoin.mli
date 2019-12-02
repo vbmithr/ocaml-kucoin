@@ -25,7 +25,9 @@ module Pair : sig
   } [@@deriving sexp]
 
   val create : base:string -> quote:string -> t
+  val compare : t -> t -> int
   val equal : t -> t -> bool
+  val hash : t -> int
 
   val pp : t Fmt.t
   val pp_list : t list Fmt.t

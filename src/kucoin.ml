@@ -43,6 +43,8 @@ module Pair = struct
   } [@@deriving sexp]
 
   let create ~base ~quote = { base; quote }
+  let compare = Stdlib.compare
+  let hash = Hashtbl.hash
   let equal = Stdlib.(=)
 
   let pp ppf { base; quote } = Format.fprintf ppf "%s-%s" base quote
