@@ -1,8 +1,5 @@
 open Kucoin
 
-val url : Uri.t
-val sandbox_url : Uri.t
-
 type symbol = {
   id: string ;
   base_currency: string ;

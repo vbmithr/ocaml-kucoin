@@ -2,12 +2,6 @@ open Json_encoding
 open Kucoin
 open Core
 
-(* https://api.kucoin.com *)
-let url = Uri.make ~scheme:"https" ~host:"api.kucoin.com" ()
-
-(* https://openapi-sandbox.kucoin.com *)
-let sandbox_url = Uri.make ~scheme:"https" ~host:"openapi-sandbox.kucoin.com" ()
-
 type l2 = { price: float ; size: float } [@@deriving sexp]
 type l3 = { orderID: Uuidm.t ; price: float ; size: float } [@@deriving sexp]
 
