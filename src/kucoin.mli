@@ -36,6 +36,10 @@ module Pair : sig
   val of_string : string -> t
 
   val encoding : t Json_encoding.encoding
+
+  module Set : Set.S with type elt := t
+  module Map : Map.S with type key := t
+  module Table : Hashtbl.S with type key := t
 end
 
 open Json_encoding

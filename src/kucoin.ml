@@ -37,16 +37,22 @@ module Uuidm = struct
 end
 
 module Pair = struct
-  type t = {
-    base: string;
-    quote: string;
-  } [@@deriving sexp]
+  module T = struct
+    type t = {
+      base: string;
+      quote: string;
+    } [@@deriving sexp]
+
+    let compare = Stdlib.compare
+    let hash = Hashtbl.hash
+    let equal = Stdlib.(=)
+  end
+  include T
+  module Set = Set.Make(T)
+  module Map = Map.Make(T)
+  module Table = Hashtbl.Make(T)
 
   let create ~base ~quote = { base; quote }
-  let compare = Stdlib.compare
-  let hash = Hashtbl.hash
-  let equal = Stdlib.(=)
-
   let pp ppf { base; quote } = Format.fprintf ppf "%s-%s" base quote
   let pp_list = Format.pp_print_list ~pp_sep:(fun ppf () -> Format.pp_print_char ppf ',') pp
   let to_string { base; quote } = base ^ "-" ^ quote
