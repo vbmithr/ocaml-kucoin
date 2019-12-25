@@ -4,24 +4,24 @@ open Async
 type t = {
   r: Kucoin_ws.t Pipe.Reader.t ;
   w: Kucoin_ws.t Pipe.Writer.t ;
-  cleaned_up: unit Deferred.t ;
 }
 
-val connect : ?sandbox:bool -> unit -> t Deferred.Or_error.t
-val connect_exn : ?sandbox:bool -> unit -> t Deferred.t
+val connect : Uri.t -> t Deferred.Or_error.t
+val connect_exn : Uri.t -> t Deferred.t
 
-val with_connection : ?sandbox:bool ->
-  (Kucoin_ws.t Pipe.Reader.t ->
-   Kucoin_ws.t Pipe.Writer.t -> 'a Deferred.t) ->
+val with_connection :
+  f:(Kucoin_ws.t Pipe.Reader.t ->
+     Kucoin_ws.t Pipe.Writer.t -> 'a Deferred.t) -> Uri.t ->
   'a Deferred.Or_error.t
 
-val with_connection_exn : ?sandbox:bool ->
-  (Kucoin_ws.t Pipe.Reader.t ->
-   Kucoin_ws.t Pipe.Writer.t -> 'a Deferred.t) -> 'a Deferred.t
+val with_connection_exn :
+  f:(Kucoin_ws.t Pipe.Reader.t ->
+     Kucoin_ws.t Pipe.Writer.t -> 'a Deferred.t) -> Uri.t ->
+  'a Deferred.t
 
 module Persistent : sig
   include Persistent_connection_kernel.S
-    with type address = bool
+    with type address = Uri.t
      and type conn = t
 
   val create' :

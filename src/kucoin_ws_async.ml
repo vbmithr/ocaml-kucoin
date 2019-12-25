@@ -11,84 +11,49 @@ module T = struct
   type t = {
     r: Kucoin_ws.t Pipe.Reader.t ;
     w: Kucoin_ws.t Pipe.Writer.t ;
-    cleaned_up: unit Deferred.t ;
   }
 
-  let create r w cleaned_up = { r; w; cleaned_up }
+  let create r w = { r; w }
 
-  module Address = struct
-    type t = bool [@@deriving sexp]
-    let equal = Stdlib.(=)
-  end
+  module Address = Uri_sexp
 
-  let is_closed { r; _ } = Pipe.is_closed r
-  let close { r; w; cleaned_up } =
-    Pipe.close w ; Pipe.close_read r ; cleaned_up
-  let close_finished { cleaned_up; _ } = cleaned_up
+  let is_closed { r; w } = Pipe.(is_closed r && is_closed w)
+  let close { r; w } =
+    Pipe.close w ;
+    Pipe.close_read r ;
+    Deferred.unit
+
+  let close_finished { r; w } =
+    Deferred.all_unit [Pipe.closed r;
+                       Pipe.closed w]
 end
 include T
 
-let req sandbox =
-  Uri.with_path Kucoin_rest.(if sandbox then sandbox_url else url) "api/v1/bullet-public"
+let req url = Uri.with_path url "api/v1/bullet-public"
 
 let always_bullet =
   let open Json_encoding in
   conv (fun _ -> assert false) (fun a -> Ok a) Kucoin_ws.bullet
 
-let srv sandbox =
+let srv url =
   Fastrest.post_json
-    ~params:(Json_encoding.empty, ()) always_bullet (req sandbox)
+    ~params:(Json_encoding.empty, ()) always_bullet (req url)
 
-let get_url sandbox =
-  Fastrest.request (srv sandbox) >>|? fun { code = _ ; servers; token } ->
+let get_url url =
+  Fastrest.request (srv url) >>|? fun { code = _ ; servers; token } ->
   let server = List.hd_exn servers in
   let _, ps = Ptime.Span.to_d_ps server.pingIval in
   (Lazy.force Time_stamp_counter.calibrator, Int63.of_int64_exn (Int64.(ps / 1000L))),
   Uri.with_query server.endpoint
     ["token", [token]; "acceptUserMessage", ["true"]]
 
-let connect ?(sandbox=false) () =
-  get_url sandbox >>=? fun (hb_ns, url) ->
-  Deferred.Or_error.map (Fastws_async.EZ.connect ~hb_ns url)
-    ~f:begin fun { r; w; cleaned_up } ->
-      let client_read = Pipe.map r ~f:begin fun msg ->
-          Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
-        end in
-      let ws_read, client_write = Pipe.create () in
-      don't_wait_for
-        (Pipe.closed client_write >>| fun () -> Pipe.close w) ;
-      don't_wait_for @@
-      Pipe.transfer ws_read w ~f:begin fun cmd ->
-        let doc =
-          match Ezjsonm_encoding.construct encoding cmd with
-          | `A _ | `O _ as a -> Ezjsonm.to_string a
-          | _ -> invalid_arg "not a json document" in
-        Log.debug (fun m -> m "-> %s" doc) ;
-        doc
-      end ;
-      create client_read client_write cleaned_up
-    end
+let mk_client_read r =
+  Pipe.map r ~f:begin fun msg ->
+    Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
+  end
 
-module Persistent = struct
-  include Persistent_connection_kernel.Make(T)
-
-  let create' ~server_name ?on_event ?retry_delay =
-    create ~server_name ?on_event ?retry_delay ~connect:(fun sandbox -> connect ~sandbox ())
-end
-
-let connect_exn ?sandbox url =
-  connect ?sandbox url >>= function
-  | Error e -> Error.raise e
-  | Ok a -> return a
-
-let with_connection ?(sandbox=false) f =
-  get_url sandbox >>=? fun (hb_ns, url) ->
-  Fastws_async.EZ.with_connection ~hb_ns url ~f:begin fun r w ->
-    let client_read = Pipe.map r ~f:begin fun msg ->
-        Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
-      end in
-    let ws_read, client_write = Pipe.create () in
-    don't_wait_for @@
+let mk_client_write w =
+  Pipe.create_writer begin fun ws_read ->
     Pipe.transfer ws_read w ~f:begin fun cmd ->
       let doc =
         match Ezjsonm_encoding.construct encoding cmd with
@@ -96,11 +61,37 @@ let with_connection ?(sandbox=false) f =
         | _ -> invalid_arg "not a json document" in
       Log.debug (fun m -> m "-> %s" doc) ;
       doc
-    end ;
-    f client_read client_write
+    end
   end
 
-let with_connection_exn ?sandbox f =
-  with_connection ?sandbox f >>= function
+let connect url =
+  get_url url >>=? fun (hb_ns, url) ->
+  Deferred.Or_error.map (Fastws_async.EZ.connect ~hb_ns url)
+    ~f:begin fun { r; w; _ } ->
+      let client_write = mk_client_write w in
+      (Pipe.closed client_write >>> fun () -> Pipe.close w) ;
+      create (mk_client_read r) client_write
+    end
+
+module Persistent = struct
+  include Persistent_connection_kernel.Make(T)
+
+  let create' ~server_name ?on_event ?retry_delay =
+    create ~server_name ?on_event ?retry_delay ~connect
+end
+
+let connect_exn url =
+  connect url >>= function
+  | Error e -> Error.raise e
+  | Ok a -> return a
+
+let with_connection ~f url =
+  get_url url >>=? fun (hb_ns, url) ->
+  Fastws_async.EZ.with_connection ~hb_ns url ~f:begin fun r w ->
+    f (mk_client_read r) (mk_client_write w)
+  end
+
+let with_connection_exn ~f url =
+  with_connection ~f url >>= function
   | Error e -> Error.raise e
   | Ok a -> return a
