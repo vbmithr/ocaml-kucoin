@@ -42,8 +42,8 @@ let srv url =
 let get_url url =
   Fastrest.request (srv url) >>|? fun { code = _ ; servers; token } ->
   let server = List.hd_exn servers in
-  let _, ps = Ptime.Span.to_d_ps server.pingIval in
-  (Lazy.force Time_stamp_counter.calibrator, Int63.of_int64_exn (Int64.(ps / 1000L))),
+  let ival = Caml.Option.get (Ptime.Span.to_int_s server.pingIval) in
+  Time_ns.Span.of_int_sec ival,
   Uri.with_query server.endpoint
     ["token", [token]; "acceptUserMessage", ["true"]]
 
@@ -65,8 +65,8 @@ let mk_client_write w =
   end
 
 let connect url =
-  get_url url >>=? fun (hb_ns, url) ->
-  Deferred.Or_error.map (Fastws_async.EZ.connect ~hb_ns url)
+  get_url url >>=? fun (hb, url) ->
+  Deferred.Or_error.map (Fastws_async.connect ~hb url)
     ~f:begin fun { r; w; _ } ->
       let client_write = mk_client_write w in
       (Pipe.closed client_write >>> fun () -> Pipe.close w) ;
@@ -86,8 +86,8 @@ let connect_exn url =
   | Ok a -> return a
 
 let with_connection ~f url =
-  get_url url >>=? fun (hb_ns, url) ->
-  Fastws_async.EZ.with_connection ~hb_ns url ~f:begin fun r w ->
+  get_url url >>=? fun (hb, url) ->
+  Fastws_async.with_connection ~hb url ~f:begin fun r w ->
     f (mk_client_read r) (mk_client_write w)
   end
 
