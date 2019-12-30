@@ -2,21 +2,23 @@
  (name ws)
  (modules ws)
  (public_name kucoin-ws-cli)
- (package kucoin-ws-async)
+ (package kucoin-ws)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
-  bs-devkit
-  logs-async-reporter
-  kucoin-rest
-  kucoin-ws
-  kucoin-ws-async))
+   core
+   async
+   fastws-async
+   bs-devkit
+   logs-async-reporter
+   kucoin-rest
+   kucoin-ws))
 
 (test
  (name       test)
  (modules    test)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
-  bs-devkit
-  kucoin-rest
-  alcotest-async
-  logs-async-reporter))
+   bs-devkit
+   kucoin-rest
+   alcotest-async
+   logs-async-reporter))

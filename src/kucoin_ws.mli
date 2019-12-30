@@ -132,5 +132,6 @@ type t =
 [@@deriving sexp]
 
 val pp : t Fmt.t
-
 val encoding : t encoding
+val of_string : string -> t
+val to_string : t -> string

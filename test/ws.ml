@@ -87,7 +87,7 @@ let main _cfg sandbox =
    *         ~passphrase:cfg.passphrase,
    *       { Fastrest.key = cfg.key ; secret ; meta = ["passphrase", cfg.passphrase] }
    *     end in *)
-  Kucoin_ws_async.with_connection_exn url ~f:begin fun r w ->
+  Fastws_async.with_connection ~to_string ~of_string url begin fun _ r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

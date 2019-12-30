@@ -43,17 +43,3 @@
    uri
    ocplib-json-typed
    fixtypes))
-
-(library
- (name        kucoin_ws_async)
- (public_name kucoin-ws-async)
- (modules kucoin_ws_async)
- (preprocess (pps ppx_sexp_conv))
- (libraries
-   fastrest
-   kucoin-rest
-   ezjsonm
-   kucoin_ws
-   core
-   async
-   fastws-async))
