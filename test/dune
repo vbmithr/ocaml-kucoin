@@ -1,6 +1,7 @@
 (test
  (name       test)
  (modules    test)
+ (package kucoin-rest)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    kucoin-rest
