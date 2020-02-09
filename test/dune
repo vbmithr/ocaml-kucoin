@@ -18,8 +18,8 @@
  (libraries
    core
    async
+   yojson
    fastws-async
-   bs-devkit
    logs-async-reporter
    kucoin-rest
    kucoin-ws))

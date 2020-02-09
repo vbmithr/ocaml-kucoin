@@ -38,5 +38,4 @@
    ptime
    uuidm
    uri
-   ezjsonm
    ocplib-json-typed))

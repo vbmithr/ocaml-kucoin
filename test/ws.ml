@@ -73,20 +73,13 @@ let process_user_cmd ~sandbox:_ w =
   in
   loop ()
 
-let main _cfg sandbox =
-  (* let auth =
-   *   Option.map
-   *     (List.Assoc.find cfg "CBPRO" ~equal:String.equal)
-   *     ~f:begin fun cfg ->
-   *       let timestamp = Time_ns.(now () |> to_span_since_epoch |> Span.to_int_ms |> fun a -> a // 1000 |> Float.to_string) in
-   *       let secret = Base64.decode_exn cfg.Bs_devkit.Cfg.secret in
-   *       auth
-   *         ~timestamp
-   *         ~key:cfg.key
-   *         ~secret
-   *         ~passphrase:cfg.passphrase,
-   *       { Fastrest.key = cfg.key ; secret ; meta = ["passphrase", cfg.passphrase] }
-   *     end in *)
+let main sandbox =
+  let module Encoding = Json_encoding.Make(Json_repr.Yojson) in
+  let buf = Bi_outbuf.create 4096 in
+  let of_string s =
+    Encoding.destruct encoding (Yojson.Safe.from_string ~buf s) in
+  let to_string t =
+    Yojson.Safe.to_string ~buf (Encoding.construct encoding t) in
   Fastws_async.with_connection ~to_string ~of_string url begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
@@ -101,10 +94,9 @@ let () =
     let open Command.Let_syntax in
     [%map_open
       let () = Logs_async_reporter.set_level_via_param []
-      and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox"
-      and cfg = Bs_devkit.Cfg.param () in
+      and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox" in
       fun () ->
         Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-        main cfg sandbox
+        main sandbox
     ] end |>
   Command.run

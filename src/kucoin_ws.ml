@@ -402,12 +402,3 @@ let encoding =
     case (message "trade.l3change" change) (function Change i -> Some i | _ -> None) (fun i -> Change i) ;
     case (message "trade.l2update" l2update) (function L2 i -> Some i | _ -> None) (fun i -> L2 i) ;
   ]
-
-let of_string msg =
-  Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
-
-let to_string t =
-  match Ezjsonm_encoding.construct encoding t with
-  | `A _ | `O _ as a -> Ezjsonm.to_string a
-  | #Json_repr.ezjsonm -> invalid_arg "not a json document"
-
