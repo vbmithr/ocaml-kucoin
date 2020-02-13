@@ -1,13 +1,13 @@
 open Core
 open Async
-
 open Kucoin
 open Kucoin_rest
+open Alcotest_async
 
 let wrap_request
     ?(timeout=Time.Span.of_int_sec 5)
     ?(speed=`Quick) n service =
-  Alcotest_async.test_case ~timeout n speed begin fun () ->
+  test_case ~timeout n speed begin fun () ->
     (Fastrest.request ?auth:None service) |>
     Deferred.ignore_m
   end
@@ -15,13 +15,11 @@ let wrap_request
 let wrap_request_light
     ?(timeout=Time.Span.of_int_sec 5)
     ?(speed=`Quick) n f =
-  Alcotest_async.test_case ~timeout n speed begin fun () ->
+  test_case ~timeout n speed begin fun () ->
     f () |>
     Deferred.Or_error.ignore_m |>
     Deferred.Or_error.ok_exn
   end
-
-let test_later = ref []
 
 let rest = [
   wrap_request "symbols" (symbols ()) ;
@@ -33,10 +31,11 @@ let rest = [
     (book20 ~sandbox:false (Pair.create ~base:"BTC" ~quote:"USDT")) ;
 ]
 
-let () =
-  Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-  Logs.set_level (Some Debug) ;
-  Alcotest.run ~and_exit:false "kucoin" [
+let main () =
+  run "kucoin" [
     "rest", rest ;
-  ] ;
-  Alcotest.run "kucoin_later" !test_later
+  ]
+
+let () =
+  don't_wait_for (main ()) ;
+  never_returns (Scheduler.go ())

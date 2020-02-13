@@ -5,9 +5,7 @@
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    kucoin-rest
-   alcotest
-   alcotest-async
-   logs-async-reporter))
+   alcotest-async))
 
 (executable
  (name ws)
